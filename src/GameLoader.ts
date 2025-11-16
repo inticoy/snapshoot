@@ -14,7 +14,7 @@ import {
   getTossShareLink,
   share
 } from '@apps-in-toss/web-framework';
-import { isTossGameCenterAvailable, isTossAdAvailable, logEnvironmentInfo } from './utils/TossEnvironment';
+import { isTossApp, isTossGameCenterAvailable, isTossAdAvailable, logEnvironmentInfo } from './utils/TossEnvironment';
 import { TOSS_CONFIG } from './config/TossConfig';
 
 /**
@@ -329,6 +329,13 @@ export function loadGame(params?: { score?: number }) {
         game.restartGame(); // 점수와 실패 카운트 초기화
       },
       onShare: async () => {
+        // 토스 앱 환경이 아니면 경고 메시지 표시
+        if (!isTossApp()) {
+          console.warn('ℹ️ 공유 기능은 토스 앱에서만 사용 가능합니다.');
+          alert('공유 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!');
+          return;
+        }
+
         try {
           // 1. 현재 점수 가져오기
           const score = gameOverModal.getScore();
