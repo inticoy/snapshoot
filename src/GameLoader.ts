@@ -329,13 +329,6 @@ export function loadGame(params?: { score?: number }) {
         game.restartGame(); // 점수와 실패 카운트 초기화
       },
       onShare: async () => {
-        // 토스 앱 환경이 아니면 경고 메시지 표시
-        if (!isTossApp()) {
-          console.warn('ℹ️ 공유 기능은 토스 앱에서만 사용 가능합니다.');
-          alert('공유 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!');
-          return;
-        }
-
         try {
           // 1. 현재 점수 가져오기
           const score = gameOverModal.getScore();
@@ -343,32 +336,49 @@ export function loadGame(params?: { score?: number }) {
           // 2. 랜덤 메시지 생성
           const message = getRandomShareMessage(score);
 
-          // 3. 환경에 따라 딥링크 스킴 결정
-          const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
-          const scheme = environment === 'production' ? 'intoss' : 'intoss-private';
+          // 3. 토스 앱 여부에 따라 다른 공유 링크 사용
+          if (isTossApp()) {
+            // 토스 앱: 딥링크 + 토스 공유 링크 사용
+            const environment = import.meta.env.VITE_ENVIRONMENT || 'development';
+            const scheme = environment === 'production' ? 'intoss' : 'intoss-private';
+            const deepLink = `${scheme}://snapshoot?score=${score}`;
 
-          // 4. 딥링크 생성 (점수 포함)
-          const deepLink = `${scheme}://snapshoot?score=${score}`;
+            console.log(`📤 공유 시작 (토스 앱) - 환경: ${environment}, 딥링크: ${deepLink}`);
 
-          console.log(`📤 공유 시작 - 환경: ${environment}, 딥링크: ${deepLink}`);
+            const tossShareLink = await getTossShareLink(deepLink);
+            await share({
+              message: `${message}\n${tossShareLink}`
+            });
 
-          // 5. 토스 공유 링크 생성
-          const tossShareLink = await getTossShareLink(deepLink);
+            console.log('✅ 공유 성공! (토스 앱)');
+          } else {
+            // 웹: GitHub Pages 링크 사용
+            const webLink = 'https://inticoy.github.io/snapshoot';
+            const shareText = `${message}\n${webLink}`;
 
-          // 6. 공유 시트 표시
-          await share({
-            message: `${message}\n${tossShareLink}`
-          });
+            console.log(`📤 공유 시작 (웹) - 링크: ${webLink}`);
 
-          console.log('✅ 공유 성공!');
+            // Web Share API 사용 가능 여부 확인
+            if (navigator.share) {
+              await navigator.share({
+                text: shareText
+              });
+              console.log('✅ 공유 성공! (Web Share API)');
+            } else {
+              // Web Share API 미지원 시 클립보드 복사
+              await navigator.clipboard.writeText(shareText);
+              alert('공유 메시지가 클립보드에 복사되었습니다!\n원하는 곳에 붙여넣기 해주세요.');
+              console.log('✅ 클립보드 복사 완료!');
+            }
+          }
         } catch (error) {
           console.error('❌ 공유 실패:', error);
-          // 에러 처리 (선택): 사용자에게 알림
           if (error instanceof Error) {
-            if (error.message.includes('cancel')) {
+            if (error.message.includes('cancel') || error.name === 'AbortError') {
               console.log('ℹ️ 사용자가 공유를 취소했습니다.');
             } else {
               console.error('공유 오류:', error.message);
+              alert('공유 중 오류가 발생했습니다.\n다시 시도해주세요.');
             }
           }
         }
