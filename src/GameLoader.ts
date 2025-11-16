@@ -16,6 +16,7 @@ import {
 } from '@apps-in-toss/web-framework';
 import { isTossApp, isTossGameCenterAvailable, isTossAdAvailable, logEnvironmentInfo } from './utils/TossEnvironment';
 import { TOSS_CONFIG } from './config/TossConfig';
+import { showToast } from './ui/utils/Toast';
 
 /**
  * 친구 점수 알림 표시
@@ -174,14 +175,20 @@ export function loadGame(params?: { score?: number }) {
       // 게임센터가 비활성화되어 있으면 안내 메시지 표시
       if (!TOSS_CONFIG.GAME_CENTER_ENABLED) {
         console.warn('ℹ️ 게임센터 기능이 아직 활성화되지 않았습니다.');
-        alert('랭킹 기능은 준비 중입니다.\n조금만 기다려주세요!');
+        showToast({
+          message: '랭킹 기능은 준비 중입니다.\n조금만 기다려주세요!',
+          type: 'info'
+        });
         return;
       }
 
       // 토스 앱 환경이 아니면 경고 메시지 표시
       if (!isTossGameCenterAvailable()) {
         console.warn('ℹ️ 랭킹 기능은 토스 앱에서만 사용 가능합니다.');
-        alert('랭킹 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!');
+        showToast({
+          message: '랭킹 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!',
+          type: 'info'
+        });
         return;
       }
 
@@ -367,7 +374,10 @@ export function loadGame(params?: { score?: number }) {
             } else {
               // Web Share API 미지원 시 클립보드 복사
               await navigator.clipboard.writeText(shareText);
-              alert('공유 메시지가 클립보드에 복사되었습니다!\n원하는 곳에 붙여넣기 해주세요.');
+              showToast({
+                message: '공유 메시지가 클립보드에 복사되었습니다!\n원하는 곳에 붙여넣기 해주세요.',
+                type: 'success'
+              });
               console.log('✅ 클립보드 복사 완료!');
             }
           }
@@ -378,7 +388,10 @@ export function loadGame(params?: { score?: number }) {
               console.log('ℹ️ 사용자가 공유를 취소했습니다.');
             } else {
               console.error('공유 오류:', error.message);
-              alert('공유 중 오류가 발생했습니다.\n다시 시도해주세요.');
+              showToast({
+                message: '공유 중 오류가 발생했습니다.\n다시 시도해주세요.',
+                type: 'error'
+              });
             }
           }
         }
@@ -387,14 +400,20 @@ export function loadGame(params?: { score?: number }) {
         // 게임센터가 비활성화되어 있으면 안내 메시지 표시
         if (!TOSS_CONFIG.GAME_CENTER_ENABLED) {
           console.warn('ℹ️ 게임센터 기능이 아직 활성화되지 않았습니다.');
-          alert('랭킹 기능은 준비 중입니다.\n조금만 기다려주세요!');
+          showToast({
+            message: '랭킹 기능은 준비 중입니다.\n조금만 기다려주세요!',
+            type: 'info'
+          });
           return;
         }
 
         // 토스 앱 환경이 아니면 경고 메시지 표시
         if (!isTossGameCenterAvailable()) {
           console.warn('ℹ️ 랭킹 기능은 토스 앱에서만 사용 가능합니다.');
-          alert('랭킹 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!');
+          showToast({
+            message: '랭킹 기능은 토스 앱에서만 사용 가능합니다.\n토스 앱에서 게임을 실행해주세요!',
+            type: 'info'
+          });
           return;
         }
 
