@@ -29,7 +29,8 @@ export class ContinueModal extends BaseModal {
   private progressCircle!: SVGCircleElement;
   private percentageText!: HTMLSpanElement;
   private timerText!: HTMLSpanElement;
-  private timerInterval?: number;
+  private animationFrameId?: number;
+  private fallbackInterval?: number;
   private startTime?: number;
 
   constructor(
@@ -129,7 +130,6 @@ export class ContinueModal extends BaseModal {
     this.progressCircle.setAttribute('stroke-linecap', 'round');
     this.progressCircle.setAttribute('stroke-dasharray', circumference.toString());
     this.progressCircle.setAttribute('stroke-dashoffset', '0');
-    this.progressCircle.style.transition = 'stroke-dashoffset 0.1s linear';
 
     svg.appendChild(bgCircle);
     svg.appendChild(this.progressCircle);
@@ -260,20 +260,38 @@ export class ContinueModal extends BaseModal {
         this.stopTimer();
         this.close();
         this.callbacks.onTimeout?.();
+        return;
       }
+
+      // requestAnimationFrame으로 계속 실행
+      this.animationFrameId = requestAnimationFrame(updateProgress);
     };
 
-    // 60fps로 업데이트
-    this.timerInterval = window.setInterval(updateProgress, 1000 / 60);
+    // requestAnimationFrame으로 부드러운 애니메이션 (브라우저 렌더링 사이클과 동기화)
+    this.animationFrameId = requestAnimationFrame(updateProgress);
+
+    // Fallback: 모바일 절전 모드에서 requestAnimationFrame이 throttling될 경우를 대비
+    // 1초마다 강제로 업데이트하여 최소한의 정확도 보장
+    this.fallbackInterval = window.setInterval(() => {
+      if (this.startTime) {
+        const elapsed = Date.now() - this.startTime;
+        const remaining = Math.max(0, this.timeoutSeconds - elapsed / 1000);
+        this.timerText.textContent = Math.ceil(remaining).toString();
+      }
+    }, 1000);
   }
 
   /**
    * 타이머 중지
    */
   private stopTimer(): void {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = undefined;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = undefined;
+    }
+    if (this.fallbackInterval) {
+      clearInterval(this.fallbackInterval);
+      this.fallbackInterval = undefined;
     }
     this.startTime = undefined;
   }
